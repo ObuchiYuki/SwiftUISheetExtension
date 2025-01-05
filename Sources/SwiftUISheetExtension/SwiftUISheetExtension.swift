@@ -99,14 +99,14 @@ private struct SheetContainer<Item, SheetContent: View>: UIViewControllerReprese
         Coordinator(parent: self)
     }
 
-    func makeUIViewController(context: Context) -> UIViewController {
-        UIViewController()
+    func makeUIViewController(context: Context) -> SheetPresentationController {
+        SheetPresentationController()
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        let isAlreadyPresented = (uiViewController.presentedViewController != nil)
+    func updateUIViewController(_ uiViewController: SheetPresentationController, context: Context) {
+        let isAlreadyPresented = uiViewController.presentingHostingController != nil
         
-        if let item = item, !isAlreadyPresented { // SwiftUIでは表示されている、UIKitでは表示されていない
+        if let item = self.item, !isAlreadyPresented {
             let hostingController = UIHostingController(
                 rootView: self.sheetContent(item)
                     .environment(\.dismissSheet, DismissSheetAction(dismiss: {
@@ -121,8 +121,10 @@ private struct SheetContainer<Item, SheetContent: View>: UIViewControllerReprese
             hostingController.modalPresentationStyle = .automatic
             hostingController.presentationController?.delegate = context.coordinator
             uiViewController.present(hostingController, animated: true)
-        } else if self.item == nil && isAlreadyPresented { // SwiftUIでは表示されていない、UIKitでは表示されている
-            uiViewController.dismiss(animated: true)
+            uiViewController.presentingHostingController = hostingController
+        } else if self.item == nil && isAlreadyPresented {
+            uiViewController.presentingHostingController?.dismiss(animated: true)
+            uiViewController.presentingHostingController = nil
         }
     }
 
@@ -146,3 +148,6 @@ private struct SheetContainer<Item, SheetContent: View>: UIViewControllerReprese
     }
 }
 
+final private class SheetPresentationController: UIViewController {
+    weak var presentingHostingController: UIViewController?
+}
