@@ -1,5 +1,7 @@
 # SwiftUISheetExtension
 
+<img src="https://github.com/user-attachments/assets/a21cf297-f7fe-4e61-b447-451f8933be02" width=250 alt="example screenshot">
+
 SwiftUI の `sheet` と同様に使える `sheet_` を提供し、次の機能を追加します:
 
 - `@Environment(\.dismissSheet)` で現在のシートをプログラム的に閉じられる  
