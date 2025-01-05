@@ -2,7 +2,7 @@
 
 # SwiftUISheetExtension
 
-![example](https://github.com/user-attachments/assets/a21cf297-f7fe-4e61-b447-451f8933be02)
+<img src="https://github.com/user-attachments/assets/a21cf297-f7fe-4e61-b447-451f8933be02" width=250 alt="example screenshot">
 
 A SwiftUI extension that provides `sheet_`, behaving like the standard `sheet`, but with two extra features:
 
