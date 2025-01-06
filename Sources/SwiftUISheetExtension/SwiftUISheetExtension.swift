@@ -22,21 +22,33 @@ extension EnvironmentValues {
     @Entry public var dismissSheet: DismissSheetAction = DismissSheetAction(dismiss: {})
 }
 
+private struct IsPresented: Identifiable {
+    let id = 0
+    
+    static let instance = IsPresented()
+}
+
 extension View {
     public func sheet_<SheetContent: View>(
         isPresented: Binding<Bool>,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> SheetContent
     ) -> some View {
-        self.sheet_(item: Binding<Optional<Void>>(
-            get: { isPresented.wrappedValue ? () : nil },
-            set: { isPresented.wrappedValue = $0 != nil }
-        ), onDismiss: onDismiss) { _ in
+        // Item is Identifiable so that the current sheet is closed and a new sheet is displayed when Item is changed.
+        // At this time, since isPresented always takes only two values of true/false, IsPresented.instance is assigned to true to be regarded as the same value.
+        // The Coordinator determines "the same", so it is not a problem that multiple sheet_ have the same IsPresented.instance.
+        self.sheet_(
+            item: Binding<IsPresented?>(
+                get: { isPresented.wrappedValue ? IsPresented.instance : nil },
+                set: { isPresented.wrappedValue = $0 != nil }
+            ),
+            onDismiss: onDismiss
+        ) { _ in
             content()
         }
     }
     
-    public func sheet_<Item, SheetContent: View>(
+    public func sheet_<Item: Identifiable, SheetContent: View>(
         item: Binding<Item?>,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping (Item) -> SheetContent
@@ -69,7 +81,7 @@ private struct OnDismissAttemptPreferenceKey: PreferenceKey {
     }
 }
 
-private struct SheetModifier<Item, SheetContent: View>: ViewModifier {
+private struct SheetModifier<Item: Identifiable, SheetContent: View>: ViewModifier {
     @Binding var item: Item?
     
     let onDismiss: (() -> Void)?
@@ -88,7 +100,7 @@ private struct SheetModifier<Item, SheetContent: View>: ViewModifier {
     }
 }
 
-private struct SheetContainer<Item, SheetContent: View>: UIViewControllerRepresentable {
+private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewControllerRepresentable {
     @Binding var item: Item?
 
     let onDismiss: (() -> Void)?
@@ -105,8 +117,10 @@ private struct SheetContainer<Item, SheetContent: View>: UIViewControllerReprese
 
     func updateUIViewController(_ uiViewController: SheetPresentationController, context: Context) {
         let isAlreadyPresented = uiViewController.presentingHostingController != nil
+        let isItemUpdated = context.coordinator.currentItemID != self.item?.id
+        context.coordinator.currentItemID = self.item?.id
         
-        if let item = self.item, !isAlreadyPresented {
+        func present(for item: Item) {
             let hostingController = UIHostingController(
                 rootView: self.sheetContent(item)
                     .environment(\.dismissSheet, DismissSheetAction(dismiss: {
@@ -118,18 +132,41 @@ private struct SheetContainer<Item, SheetContent: View>: UIViewControllerReprese
                         }
                     }
             )
-            hostingController.modalPresentationStyle = .automatic
             hostingController.presentationController?.delegate = context.coordinator
             uiViewController.present(hostingController, animated: true)
             uiViewController.presentingHostingController = hostingController
-        } else if self.item == nil && isAlreadyPresented {
+        }
+        
+        func dismiss() {
+            // If you use the completion of dismiss to delay calling present, the state of SwiftUI may become inconsistent.
+            // The present is automatically delayed by the UIKit mechanism, so it is okay to call present immediately after dismiss.
             uiViewController.presentingHostingController?.dismiss(animated: true)
             uiViewController.presentingHostingController = nil
+        }
+        
+        if let item = item {
+            // 1) The item is not nil and has been updated, and is already displayed
+            if isItemUpdated, isAlreadyPresented {
+                dismiss()
+                present(for: item)
+            }
+            
+            // 2) The item is not nil and has been updated, and is not displayed
+            if !isAlreadyPresented {
+                present(for: item)
+            }
+        } else {
+            // 3) The item is nil, and is already displayed
+            if isAlreadyPresented {
+                dismiss()
+            }
         }
     }
 
     final class Coordinator: NSObject, UIAdaptivePresentationControllerDelegate {
         let parent: SheetContainer
+        
+        var currentItemID: Item.ID?
         
         var onDismissAttempt: (() -> Void)?
         
