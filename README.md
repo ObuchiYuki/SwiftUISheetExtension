@@ -1,6 +1,6 @@
-**README.md (English)**
-
 # SwiftUISheetExtension
+
+Japanese README: [README-ja.md](https://github.com/ObuchiYuki/SwiftUISheetExtension/blob/main/README-ja.md)
 
 <img src="https://github.com/user-attachments/assets/a21cf297-f7fe-4e61-b447-451f8933be02" width=250 alt="example screenshot">
 
