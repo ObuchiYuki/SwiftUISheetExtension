@@ -69,7 +69,7 @@ struct SheetScreen: View {
         .interactiveDismissDisabled(
             self.closability == .none || self.closability == .confirmation
         )
-        .onDismissAttempt_ {
+        .onInteractiveDismissAttempt_ {
             if self.closability == .confirmation {
                 self.showAlert = true
             }

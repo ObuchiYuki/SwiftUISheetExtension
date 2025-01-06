@@ -62,21 +62,27 @@ extension View {
         )
     }
     
-    nonisolated public func onDismissAttempt_(_ action: @escaping () -> Void) -> some View {
-        self.preference(key: OnDismissAttemptPreferenceKey.self, value: OnDismissAttemptClosure(closure: action))
+    nonisolated public func onInteractiveDismissAttempt_(_ action: @escaping () -> Void) -> some View {
+        self.preference(
+            key: OnInteractiveDismissAttemptPreferenceKey.self,
+            value: OnInteractiveDismissAttemptClosure(closure: action)
+        )
     }
 }
 
-private struct OnDismissAttemptClosure: Equatable, @unchecked Sendable {
+private struct OnInteractiveDismissAttemptClosure: Equatable, @unchecked Sendable {
     let closure: () -> Void
     
-    static func == (lhs: OnDismissAttemptClosure, rhs: OnDismissAttemptClosure) -> Bool { false }
+    static func == (lhs: Self, rhs: Self) -> Bool { false }
 }
 
-private struct OnDismissAttemptPreferenceKey: PreferenceKey {
-    static let defaultValue: OnDismissAttemptClosure? = nil
+private struct OnInteractiveDismissAttemptPreferenceKey: PreferenceKey {
+    static let defaultValue: OnInteractiveDismissAttemptClosure? = nil
     
-    static func reduce(value: inout OnDismissAttemptClosure?, nextValue: () -> OnDismissAttemptClosure?) {
+    static func reduce(
+        value: inout OnInteractiveDismissAttemptClosure?,
+        nextValue: () -> OnInteractiveDismissAttemptClosure?
+    ) {
         value = nextValue()
     }
 }
@@ -126,9 +132,9 @@ private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewCon
                     .environment(\.dismissSheet, DismissSheetAction(dismiss: {
                         self.item = nil
                     }))
-                    .onPreferenceChange(OnDismissAttemptPreferenceKey.self) { value in
+                    .onPreferenceChange(OnInteractiveDismissAttemptPreferenceKey.self) { value in
                         MainActor.assumeIsolated{
-                            context.coordinator.onDismissAttempt = value?.closure
+                            context.coordinator.onInteractiveDismissAttempt = value?.closure
                         }
                     }
             )
@@ -168,7 +174,7 @@ private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewCon
         
         var currentItemID: Item.ID?
         
-        var onDismissAttempt: (() -> Void)?
+        var onInteractiveDismissAttempt: (() -> Void)?
         
         init(parent: SheetContainer) {
             self.parent = parent
@@ -180,7 +186,7 @@ private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewCon
         }
 
         func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
-            self.onDismissAttempt?()
+            self.onInteractiveDismissAttempt?()
         }
     }
 }

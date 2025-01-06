@@ -38,7 +38,7 @@ Button("閉じる") {
 @Environment(\.dismissSheet) private var dismissSheet
 
 .interactiveDismissDisabled(true)
-.onDismissAttempt_ {
+.onInteractiveDismissAttempt_ {
     showAlert = true
 }
 .alert("シートを閉じますか？", isPresented: $showAlert) {

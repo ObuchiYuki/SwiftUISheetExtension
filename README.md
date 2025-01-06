@@ -40,7 +40,7 @@ Button("Dismiss") {
 @Environment(\.dismissSheet) private var dismissSheet
 
 .interactiveDismissDisabled(true)
-.onDismissAttempt_ {
+.onInteractiveDismissAttempt_ {
     showAlert = true
 }
 .alert("Dismiss?", isPresented: $showAlert) {
