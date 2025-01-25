@@ -19,7 +19,9 @@ public struct DismissSheetAction: Equatable {
 }
 
 extension EnvironmentValues {
-    @Entry public var dismissSheet: DismissSheetAction = DismissSheetAction(dismiss: {})
+    @Entry public var dismissSheet: DismissSheetAction = DismissSheetAction(dismiss: {
+        assertionFailure("The dismissSheet action is not available outside of a sheet.")
+    })
 }
 
 private struct IsPresented: Identifiable {
