@@ -9,11 +9,15 @@ import SwiftUI
 import UIKit
 
 public struct DismissSheetAction: Equatable {
-    let dismiss: () -> Void
+    @usableFromInline let dismiss: () -> Void
     
-    public static func == (lhs: DismissSheetAction, rhs: DismissSheetAction) -> Bool { false }
+    @inlinable public init(dismiss: @escaping () -> Void) {
+        self.dismiss = dismiss
+    }
     
-    public func callAsFunction() {
+    @inlinable public static func == (lhs: DismissSheetAction, rhs: DismissSheetAction) -> Bool { false }
+    
+    @inlinable public func callAsFunction() {
         self.dismiss()
     }
 }
@@ -24,14 +28,16 @@ extension EnvironmentValues {
     })
 }
 
-private struct IsPresented: Identifiable {
-    let id = 0
+@usableFromInline struct IsPresented: Identifiable, Sendable {
+    @usableFromInline let id = 0
     
-    static let instance = IsPresented()
+    @usableFromInline static let instance = IsPresented()
+    
+    @inlinable init() {}
 }
 
 extension View {
-    public func sheet_<SheetContent: View>(
+    @inlinable public func sheet_<SheetContent: View>(
         isPresented: Binding<Bool>,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> SheetContent
@@ -50,7 +56,7 @@ extension View {
         }
     }
     
-    public func sheet_<Item: Identifiable, SheetContent: View>(
+    @inlinable public func sheet_<Item: Identifiable, SheetContent: View>(
         item: Binding<Item?>,
         onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping (Item) -> SheetContent
@@ -64,7 +70,7 @@ extension View {
         )
     }
     
-    nonisolated public func onInteractiveDismissAttempt_(_ action: @escaping () -> Void) -> some View {
+    @inlinable nonisolated public func onInteractiveDismissAttempt_(_ action: @escaping () -> Void) -> some View {
         self.preference(
             key: OnInteractiveDismissAttemptPreferenceKey.self,
             value: OnInteractiveDismissAttemptClosure(closure: action)
@@ -72,16 +78,20 @@ extension View {
     }
 }
 
-private struct OnInteractiveDismissAttemptClosure: Equatable, @unchecked Sendable {
-    let closure: () -> Void
+@usableFromInline struct OnInteractiveDismissAttemptClosure: Equatable, @unchecked Sendable {
+    @usableFromInline let closure: () -> Void
     
-    static func == (lhs: Self, rhs: Self) -> Bool { false }
+    @inlinable static func == (lhs: Self, rhs: Self) -> Bool { false }
+    
+    @inlinable init(closure: @escaping () -> Void) {
+        self.closure = closure
+    }
 }
 
-private struct OnInteractiveDismissAttemptPreferenceKey: PreferenceKey {
-    static let defaultValue: OnInteractiveDismissAttemptClosure? = nil
+@usableFromInline struct OnInteractiveDismissAttemptPreferenceKey: PreferenceKey {
+    @usableFromInline static let defaultValue: OnInteractiveDismissAttemptClosure? = nil
     
-    static func reduce(
+    @inlinable static func reduce(
         value: inout OnInteractiveDismissAttemptClosure?,
         nextValue: () -> OnInteractiveDismissAttemptClosure?
     ) {
@@ -89,14 +99,24 @@ private struct OnInteractiveDismissAttemptPreferenceKey: PreferenceKey {
     }
 }
 
-private struct SheetModifier<Item: Identifiable, SheetContent: View>: ViewModifier {
-    @Binding var item: Item?
+@usableFromInline struct SheetModifier<Item: Identifiable, SheetContent: View>: ViewModifier {
+    @usableFromInline @Binding var item: Item?
     
-    let onDismiss: (() -> Void)?
+    @usableFromInline let onDismiss: (() -> Void)?
     
-    let sheetContent: (Item) -> SheetContent
+    @usableFromInline let sheetContent: (Item) -> SheetContent
     
-    func body(content parent: Content) -> some View {
+    @usableFromInline init(
+        item: Binding<Item?>,
+        onDismiss: (() -> Void)?,
+        sheetContent: @escaping (Item) -> SheetContent
+    ) {
+        self._item = item
+        self.onDismiss = onDismiss
+        self.sheetContent = sheetContent
+    }
+    
+    @usableFromInline func body(content parent: Content) -> some View {
         parent
             .background(
                 SheetContainer(
@@ -108,22 +128,22 @@ private struct SheetModifier<Item: Identifiable, SheetContent: View>: ViewModifi
     }
 }
 
-private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewControllerRepresentable {
-    @Binding var item: Item?
+@usableFromInline struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewControllerRepresentable {
+    @usableFromInline @Binding var item: Item?
 
-    let onDismiss: (() -> Void)?
+    @usableFromInline let onDismiss: (() -> Void)?
     
-    let sheetContent: (Item) -> SheetContent
+    @usableFromInline let sheetContent: (Item) -> SheetContent
 
-    func makeCoordinator() -> Coordinator {
+    @inlinable func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }
 
-    func makeUIViewController(context: Context) -> SheetPresentationController {
+    @inlinable func makeUIViewController(context: Context) -> SheetPresentationController {
         SheetPresentationController()
     }
 
-    func updateUIViewController(_ uiViewController: SheetPresentationController, context: Context) {
+    @inlinable func updateUIViewController(_ uiViewController: SheetPresentationController, context: Context) {
         let isAlreadyPresented = uiViewController.presentingHostingController != nil
         let isItemUpdated = context.coordinator.currentItemID != self.item?.id
         context.coordinator.currentItemID = self.item?.id
@@ -171,28 +191,29 @@ private struct SheetContainer<Item: Identifiable, SheetContent: View>: UIViewCon
         }
     }
 
-    final class Coordinator: NSObject, UIAdaptivePresentationControllerDelegate {
-        let parent: SheetContainer
+    @usableFromInline final class Coordinator: NSObject, UIAdaptivePresentationControllerDelegate {
+        @usableFromInline let parent: SheetContainer
         
-        var currentItemID: Item.ID?
+        @usableFromInline var currentItemID: Item.ID?
         
-        var onInteractiveDismissAttempt: (() -> Void)?
+        @usableFromInline var onInteractiveDismissAttempt: (() -> Void)?
         
-        init(parent: SheetContainer) {
+        @inlinable init(parent: SheetContainer) {
             self.parent = parent
         }
         
-        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        @inlinable func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
             self.parent.item = nil
             self.parent.onDismiss?()
         }
 
-        func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+        @inlinable func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
             self.onInteractiveDismissAttempt?()
         }
     }
 }
 
-final private class SheetPresentationController: UIViewController {
-    weak var presentingHostingController: UIViewController?
+@usableFromInline
+final class SheetPresentationController: UIViewController {
+    @usableFromInline weak var presentingHostingController: UIViewController?
 }
